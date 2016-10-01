@@ -12,7 +12,6 @@
 // @match        https://football.fantasysports.yahoo.com/f1/*
 // @require      https://code.jquery.com/jquery-latest.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js
-// @run-at       document-idle
 // ==/UserScript==
 
 //todo: link tags to tier popup image
