@@ -29,17 +29,17 @@ var feeds = {
     "RB":   "weekly-HALF-POINT-PPR-RB.csv",
     "WR":   "weekly-HALF-POINT-PPR-WR.csv",
     "TE":   "weekly-HALF-POINT-PPR-TE.csv",
-    "F": "weekly-HALF-POINT-PPR-FLEX.csv",
+    "F":    "weekly-HALF-POINT-PPR-FLEX.csv",
     "DEF":  "weekly-DST.csv"
 };
 
 var data = [];
-$.each(feeds,function(pos,file) {
+$.each(feeds,function(pos,feed) {
     var input = GM_getValue(pos, "");
     if (input === "" || old) {
         GM_xmlhttpRequest({
           method: "GET",
-          url: base + file,
+          url: base + feed,
           synchronous: true,
           onload: function(response) {
             GM_setValue(pos, input = response.responseText);
@@ -50,7 +50,10 @@ $.each(feeds,function(pos,file) {
 });
 console.log(data);
 
+var inject = function() {
 $("td.player").each(function() {
+
+    var i;
 
     var name = $(this).find(".ysf-player-name a").text();
     var teamspan = $(this).find(".ysf-player-name span");
@@ -58,7 +61,7 @@ $("td.player").each(function() {
     var team = teamtype.shift();
     var type = teamtype.shift();
 
-    if (type == null) return;
+    if (!type || !name) return;
 
     var pattern = name
         .replace(/\./g, "\\.")
@@ -66,20 +69,27 @@ $("td.player").each(function() {
         .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
     var re = new RegExp(pattern);
 
-    var sources = [ type ];
-    if ($.inArray(type, ["WR", "RB", "TE"]) !== -1) sources.unshift("F");
+    var types = [].concat(type.split(','));
+    for (i in types) {
+        if ($.inArray(types[i], ["WR", "RB", "TE"]) !== -1) {
+            types.unshift("F");
+            break;
+        }
+    }
 
     var tags = [];
-    for (var source in sources) {
-        source = sources[source];
-        for (var i = 0; i < data[source].length; i++) {
-            if (re.test(data[source][i]["Player.Name"])) {
-                tags.push(source+data[source][i].Tier);
+    for (i in types) {
+        var feed = types[i];
+        var tier = feed != 'F' ? feed : '';
+        if (feed in data)
+        for (i = 0; i < data[feed].length; i++) {
+            if (re.test(data[feed][i]["Player.Name"])) {
+                tier = feed+data[feed][i].Tier;
                 break;
             }
         }
+        if (tier) tags.push(tier);
     }
-    if (tags.length === 0) tags.push(type);
     var tag = tags.join(' ');
 
     $(teamspan).text(team+' ');
@@ -87,3 +97,17 @@ $("td.player").each(function() {
     $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
 
 });
+};
+
+var observer = new MutationObserver(function(mutations, observer) {
+    observer.disconnect();
+    inject();
+    observe();
+});
+var observe = function(){
+    var node = document.querySelector('table.Table');
+    for (var i = 0; i < 4; i++) node = node.parentNode;
+    observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:true});
+};
+inject();
+observe();
