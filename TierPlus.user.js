@@ -63,7 +63,7 @@ $("td.player").each(function() {
 
     var name = $(this).find(".ysf-player-name a").text();
     var teamspan = $(this).find(".ysf-player-name span");
-    var teamtype = $(teamspan).text().split(" - ");
+    var teamtype = $(teamspan).html().split(" - ");
     var team = teamtype.shift();
     var type = teamtype.shift();
 
@@ -102,7 +102,7 @@ $("td.player").each(function() {
     }
     var tag = tags.join(' ');
 
-    $(teamspan).text(team+' ');
+    $(teamspan).html(team+' <span style="display:none;">- '+type+'</span>');
     $(teamspan).after('<span class="Fz-xxs" style="float:right;margin-right:3pt;">'+tag+'</span>');
     $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
 
