@@ -59,6 +59,8 @@ $("td.player").each(function() {
     var team = teamtype.shift();
     var type = teamtype.shift();
 
+    if (type == null) return;
+
     var pattern = name
         .replace(/\./g, "\\.")
         .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
