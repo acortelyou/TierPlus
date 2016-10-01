@@ -68,7 +68,7 @@ $("td.player").each(function() {
     var re = new RegExp(pattern);
 
     var sources = [ type ];
-    if ($.inArray(type, ["WR", "RB", "TE"])) sources.unshift("FLEX");
+    if ($.inArray(type, ["WR", "RB", "TE"]) !== -1) sources.unshift("FLEX");
 
     var tags = [];
     for (var source in sources) {
