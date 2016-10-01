@@ -46,9 +46,13 @@ $.each(feeds,function(pos,feed) {
           }
         });
     }
-    data[pos] = $.csv.toObjects(input);
+    if (input) data[pos] = $.csv.toObjects(input);
 });
 console.log(data);
+
+var teammap = {};
+var input = GM_getValue("teammap", "");
+if (input) teammap = JSON.parse(input);
 
 var inject = function() {
 $("td.player").each(function() {
@@ -83,8 +87,12 @@ $("td.player").each(function() {
         var tier = feed != 'F' ? feed : '';
         if (feed in data)
         for (i = 0; i < data[feed].length; i++) {
-            if (re.test(data[feed][i]["Player.Name"])) {
-                tier = feed+data[feed][i].Tier;
+            var row = data[feed][i];
+            if (re.test(row["Player.Name"]) && (!(row.Team in teammap) || teammap[row.Team] == team)) {
+                tier = feed+row.Tier;
+                if (!/^\w\. /.test(name) && !(row.Team in teammap)) {
+                    teammap[row.Team] = team;
+                }
                 break;
             }
         }
@@ -97,6 +105,8 @@ $("td.player").each(function() {
     $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
 
 });
+
+GM_setValue("teammap", JSON.stringify(teammap));
 };
 
 var observer = new MutationObserver(function(mutations, observer) {
