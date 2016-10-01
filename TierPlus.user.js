@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.1
+// @version      0.2
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier data
