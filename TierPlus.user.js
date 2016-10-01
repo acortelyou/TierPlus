@@ -29,7 +29,7 @@ var feeds = {
     "RB":   "weekly-HALF-POINT-PPR-RB.csv",
     "WR":   "weekly-HALF-POINT-PPR-WR.csv",
     "TE":   "weekly-HALF-POINT-PPR-TE.csv",
-    "FLEX": "weekly-HALF-POINT-PPR-FLEX.csv",
+    "F": "weekly-HALF-POINT-PPR-FLEX.csv",
     "DEF":  "weekly-DST.csv"
 };
 
@@ -67,7 +67,7 @@ $("td.player").each(function() {
     var re = new RegExp(pattern);
 
     var sources = [ type ];
-    if ($.inArray(type, ["WR", "RB", "TE"]) !== -1) sources.unshift("FLEX");
+    if ($.inArray(type, ["WR", "RB", "TE"]) !== -1) sources.unshift("F");
 
     var tags = [];
     for (var source in sources) {
