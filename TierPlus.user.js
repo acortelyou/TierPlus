@@ -105,7 +105,7 @@ $("td.player").each(function() {
     $(teamspan).html(team+' <span style="display:none;">- '+type+'</span>');
     $(teamspan).after('<span class="Fz-xxs" style="float:right;margin-right:3pt;">'+tag+'</span>');
     $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
-
+    $(this).find('span.ysf-player-video-link a').text('');
 });
 
 GM_setValue("teammap", JSON.stringify(teammap));
