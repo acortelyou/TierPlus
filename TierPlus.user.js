@@ -19,38 +19,53 @@
 //todo: link tags to tier popup image
 //todo: visualize stddev in tag
 
-var now = Math.floor(Date.now() / 1000);
-var lastUpdate = GM_getValue("lastUpdate", 0);
-var old = now - lastUpdate > 10800;
-if (old) GM_setValue("lastUpdate", now);
-
 var base = "https://s3-us-west-1.amazonaws.com/fftiers/out/current/";
-var feeds = {
-    "K":    "weekly-K.csv",
-    "QB":   "weekly-QB.csv",
-    "RB":   "weekly-HALF-POINT-PPR-RB.csv",
-    "WR":   "weekly-HALF-POINT-PPR-WR.csv",
-    "TE":   "weekly-HALF-POINT-PPR-TE.csv",
-    "F":    "weekly-HALF-POINT-PPR-FLEX.csv",
-    "DEF":  "weekly-DST.csv"
-};
+var feeds = [
+    ["K",    "weekly-K.csv"],
+    ["QB",   "weekly-QB.csv"],
+    ["RB",   "weekly-HALF-POINT-PPR-RB.csv"],
+    ["WR",   "weekly-HALF-POINT-PPR-WR.csv"],
+    ["TE",   "weekly-HALF-POINT-PPR-TE.csv"],
+    ["F",    "weekly-HALF-POINT-PPR-FLEX.csv"],
+    ["DEF",  "weekly-DST.csv"]
+];
 
-var data = [];
-$.each(feeds,function(pos,feed) {
-    var input = GM_getValue(pos, "");
-    if (input === "" || old) {
-        GM_xmlhttpRequest({
-          method: "GET",
-          url: base + feed,
-          synchronous: true,
-          onload: function(response) {
-            GM_setValue(pos, input = response.responseText);
-          }
-        });
+var now = new Date();
+var data = GM_getValue('data', '');
+data = data ? JSON.parse(data) : {};
+var load = function() {
+    if (feeds.length === 0) {
+        console.log(data);
+        GM_setValue('data', JSON.stringify(data));
+        inject();
+        observe();
+        return;
     }
-    if (input) data[pos] = $.csv.toObjects(input);
-});
-console.log(data);
+    var feed = feeds.pop();
+    var file = feed.pop();
+    var pos = feed.pop();
+    var headers = {};
+    if (!(pos in data)) data[pos] = {};
+    if (data[pos].checked && (now - new Date(data[pos].checked) < 60 * 60 * 1000)) { load(); return; }
+    if (data[pos].modified) headers['If-Modified-Since'] = data.modified;
+    var response = GM_xmlhttpRequest({
+        method: "GET",
+        url: base + file,
+        headers: headers,
+        onerror: function(response) { console.log(response); load(); },
+        onload: function(response) {
+            if (response.status == 200 || response.statusText == "Not Modified") {
+                data[pos].checked = response.responseHeaders.match(/Date: (.*)/)[1];
+            }
+            if (response.status == 200) {
+                data[pos].modified = response.responseHeaders.match(/Last-Modified: (.*)/)[1];
+                data[pos].rows = $.csv.toObjects(response.responseText);
+                data[pos].text = response.responseText;
+            }
+            load();
+        }
+    });
+};
 
 var teammap = {};
 var input = GM_getValue("teammap", "");
@@ -87,9 +102,9 @@ $("td.player").each(function() {
     for (i in types) {
         var feed = types[i];
         var tier = feed != 'F' ? feed : '';
-        if (feed in data)
+        if (feed in data && data[feed].rows)
         for (i = 0; i < data[feed].length; i++) {
-            var row = data[feed][i];
+            var row = data[feed].rows[i];
             if (re.test(row["Player.Name"]) && (!(row.Team in teammap) || teammap[row.Team] == team)) {
                 tier = feed+row.Tier;
                 if (!/^\w\. /.test(name) && !(row.Team in teammap)) {
@@ -121,5 +136,5 @@ var observe = function(){
     for (var i = 0; i < 4; i++) node = node.parentNode;
     observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:true});
 };
-inject();
-observe();
+
+load();
