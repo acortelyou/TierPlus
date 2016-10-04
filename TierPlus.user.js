@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.6
+// @version      0.7
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier data
@@ -31,19 +31,29 @@ var feeds = [
 ];
 
 var now = new Date();
-var data = GM_getValue('data', '');
-data = data ? JSON.parse(data) : {};
+
+var data;
+try {
+	data = JSON.parse(GM_getValue('data', ''));
+} catch (e) {
+	data = {};
+}
+
+var ready = function() {
+    console.log(data);
+    GM_setValue('data', JSON.stringify(data));
+    inject();
+    observe();
+};
+
 var load = function() {
     if (feeds.length === 0) {
-        console.log(data);
-        GM_setValue('data', JSON.stringify(data));
-        inject();
-        observe();
+        ready();
         return;
     }
     var feed = feeds.pop();
-    var file = feed.pop();
-    var pos = feed.pop();
+    var pos = feed[0];
+    var file = feed[1];
     var headers = {};
     if (!(pos in data)) data[pos] = {};
     if (data[pos].checked && (now - new Date(data[pos].checked) < 60 * 60 * 1000)) { load(); return; }
@@ -106,7 +116,7 @@ $("td.player").each(function() {
         var feed = types[i];
         var tier = feed == 'F' ? '' : feed;
         if (feed in data && data[feed].rows)
-        for (i = 0; i < data[feed].length; i++) {
+        for (i = 0; i < data[feed].rows.length; i++) {
             var row = data[feed].rows[i];
             if (re.test(row["Player.Name"]) && team == row.Team) {
                 tier = feed+row.Tier;
