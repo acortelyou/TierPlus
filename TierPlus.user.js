@@ -67,10 +67,6 @@ var load = function() {
     });
 };
 
-var teammap = {};
-var input = GM_getValue("teammap", "");
-if (input) teammap = JSON.parse(input);
-
 var inject = function() {
 $("td.player").each(function() {
 
@@ -82,7 +78,14 @@ $("td.player").each(function() {
     var team = teamtype.shift();
     var type = teamtype.shift();
 
-    if (!type || !name) return;
+    if (!name || !type || !team) return;
+
+    team = team.toUpperCase();
+    if (team == 'JAX') {
+        team = 'JAC';
+    } else if (team == 'WSH') {
+        team = 'WAS';
+    }
 
     var pattern = name
         .replace(/\./g, "\\.")
@@ -101,15 +104,12 @@ $("td.player").each(function() {
     var tags = [];
     for (i in types) {
         var feed = types[i];
-        var tier = feed != 'F' ? feed : '';
+        var tier = feed == 'F' ? '' : feed;
         if (feed in data && data[feed].rows)
         for (i = 0; i < data[feed].length; i++) {
             var row = data[feed].rows[i];
-            if (re.test(row["Player.Name"]) && (!(row.Team in teammap) || teammap[row.Team] == team)) {
+            if (re.test(row["Player.Name"]) && team == row.Team) {
                 tier = feed+row.Tier;
-                if (!/^\w\. /.test(name) && !(row.Team in teammap)) {
-                    teammap[row.Team] = team;
-                }
                 break;
             }
         }
@@ -122,8 +122,6 @@ $("td.player").each(function() {
     $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
     $(this).find('span.ysf-player-video-link a').text('');
 });
-
-GM_setValue("teammap", JSON.stringify(teammap));
 };
 
 var observer = new MutationObserver(function(mutations, observer) {
