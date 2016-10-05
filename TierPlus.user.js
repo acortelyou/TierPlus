@@ -83,26 +83,25 @@ $("td.player").each(function() {
     var i;
 
     var name = $(this).find(".ysf-player-name a").text();
-    var teamspan = $(this).find(".ysf-player-name span");
-    var teamtype = $(teamspan).html().split(" - ");
-    var team = teamtype.shift();
-    var type = teamtype.shift();
+    if (!name) return;
 
-    if (!name || !type || !team) return;
+    var span = $(this).find(".ysf-player-name span");
+    if (!span || $(span).attr('tier')) return;
 
-    team = team.toUpperCase();
+    var text = $(span).text();
+    if (!text) return;
+
+    text = text.split(/[\s-]+/);
+    if (text.length != 2) return;
+
+    var team = text.shift().toUpperCase();
     if (team == 'JAX') {
         team = 'JAC';
     } else if (team == 'WSH') {
         team = 'WAS';
     }
 
-    var pattern = name
-        .replace(/\./g, "\\.")
-        .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
-        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
-    var re = new RegExp(pattern);
-
+    var type = text.shift().toUpperCase();
     var types = [].concat(type.split(','));
     for (i in types) {
         if ($.inArray(types[i], ["WR", "RB", "TE"]) !== -1) {
@@ -110,6 +109,12 @@ $("td.player").each(function() {
             break;
         }
     }
+
+	var pattern = name
+        .replace(/\./g, "\\.")
+        .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
+        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
+    var re = new RegExp(pattern);
 
     var tags = [];
     for (i in types) {
@@ -127,10 +132,10 @@ $("td.player").each(function() {
     }
     var tag = tags.join(' ');
 
-    $(teamspan).html(team+' <span style="display:none;">- '+type+'</span>');
-    $(teamspan).after('<span class="Fz-xxs" style="float:right;margin-right:3pt;">'+tag+'</span>');
-    $(teamspan).after($(this).find('span.ysf-player-video-link').detach());
-    $(this).find('span.ysf-player-video-link a').text('');
+    $(span).html(team+' <span style="display:none;">- '+type+'</span>');
+    $(span).after('<span class="Fz-xxs" style="float:right;margin-right:3pt;">'+tag+'</span>');
+    $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
+    $(span).attr('tier', true);
 });
 };
 
