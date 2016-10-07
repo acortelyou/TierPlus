@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.7
+// @version      0.8
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier data
@@ -19,74 +19,118 @@
 //todo: link tags to tier popup image
 //todo: visualize stddev in tag
 
-var base = "https://s3-us-west-1.amazonaws.com/fftiers/out/current/";
-var feeds = [
-    ["K",    "weekly-K.csv"],
-    ["QB",   "weekly-QB.csv"],
-    ["RB",   "weekly-HALF-POINT-PPR-RB.csv"],
-    ["WR",   "weekly-HALF-POINT-PPR-WR.csv"],
-    ["TE",   "weekly-HALF-POINT-PPR-TE.csv"],
-    ["F",    "weekly-HALF-POINT-PPR-FLEX.csv"],
-    ["DEF",  "weekly-DST.csv"]
-];
 
+var url = "https://s3-us-west-1.amazonaws.com/fftiers/out/current/";
 var now = new Date();
+var ttl = 3600;
 
 var data;
 try {
-	data = JSON.parse(GM_getValue('data', ''));
+    data = JSON.parse(GM_getValue('data', ''));
 } catch (e) {
-	data = {};
+    data = {};
 }
 
-var ready = function() {
-    console.log(data);
-    GM_setValue('data', JSON.stringify(data));
-    inject();
-    observe();
+data.QB.file  = "weekly-QB.csv";
+data.WR.file  = "weekly-HALF-POINT-PPR-WR.csv";
+data.RB.file  = "weekly-HALF-POINT-PPR-RB.csv";
+data.TE.file  = "weekly-HALF-POINT-PPR-TE.csv";
+data.F.file   = "weekly-HALF-POINT-PPR-FLEX.csv";
+data.K.file   = "weekly-K.csv";
+data.DEF.file = "weekly-DST.csv";
+
+data.WR.flex = true;
+data.RB.flex = true;
+data.TE.flex = true;
+
+var init = function() {
+    console.log('init');
+
+    for (var role in data) {
+        data[role].pending = true;
+    }
+    for (role in data) {
+        load(role);
+    }
 };
 
-var load = function() {
-    if (feeds.length === 0) {
+var load = function(role) {
+    console.log('load');
+    
+    if (data[role].checked) {
+        data[role].age = (now - new Date(data[role].checked)) / 1000;
+    }
+    
+    if (data[role].age < ttl) {
+        data[role].pending = false;
         ready();
         return;
     }
-    var feed = feeds.pop();
-    var pos = feed[0];
-    var file = feed[1];
+    
     var headers = {};
-    if (!(pos in data)) data[pos] = {};
-    if (data[pos].checked && (now - new Date(data[pos].checked) < 60 * 60 * 1000)) { load(); return; }
-    if (data[pos].modified) headers['If-Modified-Since'] = data.modified;
-    var response = GM_xmlhttpRequest({
+    if (data[role].modified) headers['If-Modified-Since'] = data.modified;
+
+    GM_xmlhttpRequest({
         method: "GET",
-        url: base + file,
+        url: url + data[role].file,
         headers: headers,
-        onerror: function(response) { console.log(response); load(); },
+        onerror: function(response) {
+            data[role].pending = false;
+            ready();
+        },
         onload: function(response) {
-            if (response.status == 200 || response.statusText == "Not Modified") {
-                data[pos].checked = response.responseHeaders.match(/Date: (.*)/)[1];
-            }
+            data[role].checked = response.responseHeaders.match(/Date: (.*)/)[1];
+            data[role].status = response.status;
+            data[role].text = response.responseText;
+
             if (response.status == 200) {
-                data[pos].modified = response.responseHeaders.match(/Last-Modified: (.*)/)[1];
-                data[pos].rows = $.csv.toObjects(response.responseText);
-                data[pos].text = response.responseText;
+                data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/)[1];
+                data[role].rows = $.csv.toObjects(response.responseText);
             }
-            load();
+
+            data[role].pending = false;
+            ready();
         }
     });
 };
 
+var ready = function() {
+    console.log('ready');
+
+    for (var role in data) {
+        if (data[role].pending) return;
+    }
+
+    GM_setValue('data', JSON.stringify(data));
+    console.log(data);
+
+    scan();
+    observe();
+};
+
+var scan = function() {
+    console.log('scan');
+    
+    $('td.player').each(inject);
+};
+
 var inject = function() {
-$("td.player").each(function() {
 
-    var i;
+    if ($(this).attr('tierplus')) return;
+    $(this).attr('tierplus', true);
 
-    var name = $(this).find(".ysf-player-name a").text();
-    if (!name) return;
+    var a = $(this).find('div.ysf-player-name a');
+    if (!a) return;
 
-    var span = $(this).find(".ysf-player-name span");
-    if (!span || $(span).attr('tier')) return;
+    var name = a.text();
+    var pattern = name
+        .replace(/\./g, "\\.")
+        .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
+        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
+    var re = new RegExp(pattern);
+
+    var span = $(this).find('div.ysf-player-name span');
+    if (!span) return;
 
     var text = $(span).text();
     if (!text) return;
@@ -103,28 +147,22 @@ $("td.player").each(function() {
 
     var type = text.shift().toUpperCase();
     var types = [].concat(type.split(','));
-    for (i in types) {
-        if ($.inArray(types[i], ["WR", "RB", "TE"]) !== -1) {
-            types.unshift("F");
+    for (var i in types) {
+        if (data[types[i]].flex) {
+            types.unshift('F');
             break;
         }
     }
 
-	var pattern = name
-        .replace(/\./g, "\\.")
-        .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
-        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
-    var re = new RegExp(pattern);
-
     var tags = [];
     for (i in types) {
-        var feed = types[i];
-        var tier = feed == 'F' ? '' : feed;
-        if (feed in data && data[feed].rows)
-        for (i = 0; i < data[feed].rows.length; i++) {
-            var row = data[feed].rows[i];
+        var role = types[i];
+        var tier = role == 'F' ? '' : role;
+        if (role in data && data[role].rows)
+        for (i = 0; i < data[role].rows.length; i++) {
+            var row = data[role].rows[i];
             if (re.test(row["Player.Name"]) && team == row.Team) {
-                tier = feed+row.Tier;
+                tier = role + row.Tier;
                 break;
             }
         }
@@ -135,19 +173,18 @@ $("td.player").each(function() {
     $(span).html(team+' <span style="display:none;">- '+type+'</span>');
     $(span).after('<span class="Fz-xxs" style="float:right;margin-right:3pt;">'+tag+'</span>');
     $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
-    $(span).attr('tier', true);
-});
 };
 
 var observer = new MutationObserver(function(mutations, observer) {
     observer.disconnect();
-    inject();
+    scan();
     observe();
 });
+
 var observe = function(){
     var node = document.querySelector('table.Table');
     for (var i = 0; i < 4; i++) node = node.parentNode;
     observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:true});
 };
 
-load();
+init();
