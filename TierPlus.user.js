@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.8
+// @version      0.8.1
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier data
@@ -20,7 +20,7 @@
 //todo: visualize stddev in tag
 
 
-var url = "https://s3-us-west-1.amazonaws.com/fftiers/out/current/";
+var url = 'https://s3-us-west-1.amazonaws.com/fftiers/out/current/';
 var now = new Date();
 var ttl = 3600;
 
@@ -31,20 +31,19 @@ try {
     data = {};
 }
 
-data.QB.file  = "weekly-QB.csv";
-data.WR.file  = "weekly-HALF-POINT-PPR-WR.csv";
-data.RB.file  = "weekly-HALF-POINT-PPR-RB.csv";
-data.TE.file  = "weekly-HALF-POINT-PPR-TE.csv";
-data.F.file   = "weekly-HALF-POINT-PPR-FLEX.csv";
-data.K.file   = "weekly-K.csv";
-data.DEF.file = "weekly-DST.csv";
+data.QB.file  = 'weekly-QB.csv';
+data.WR.file  = 'weekly-HALF-POINT-PPR-WR.csv';
+data.RB.file  = 'weekly-HALF-POINT-PPR-RB.csv';
+data.TE.file  = 'weekly-HALF-POINT-PPR-TE.csv';
+data.F.file   = 'weekly-HALF-POINT-PPR-FLEX.csv';
+data.K.file   = 'weekly-K.csv';
+data.DEF.file = 'weekly-DST.csv';
 
 data.WR.flex = true;
 data.RB.flex = true;
 data.TE.flex = true;
 
 var init = function() {
-    console.log('init');
 
     for (var role in data) {
         data[role].pending = true;
@@ -55,7 +54,6 @@ var init = function() {
 };
 
 var load = function(role) {
-    console.log('load');
     
     if (data[role].checked) {
         data[role].age = (now - new Date(data[role].checked)) / 1000;
@@ -71,7 +69,7 @@ var load = function(role) {
     if (data[role].modified) headers['If-Modified-Since'] = data.modified;
 
     GM_xmlhttpRequest({
-        method: "GET",
+        method: 'GET',
         url: url + data[role].file,
         headers: headers,
         onerror: function(response) {
@@ -95,7 +93,6 @@ var load = function(role) {
 };
 
 var ready = function() {
-    console.log('ready');
 
     for (var role in data) {
         if (data[role].pending) return;
@@ -160,7 +157,7 @@ var inject = function() {
         if (role in data && data[role].rows)
         for (i = 0; i < data[role].rows.length; i++) {
             var row = data[role].rows[i];
-            if (re.test(row["Player.Name"]) && team == row.Team) {
+            if (re.test(row['Player.Name']) && team == row.Team) {
                 tier = role + row.Tier;
                 break;
             }
