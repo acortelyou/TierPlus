@@ -111,12 +111,11 @@ var ready = function() {
 var scan = function() {
     console.log('scan');
     
-    $('td.player').each(inject);
+    $('td.player').not('[tierplus]').each(inject);
 };
 
 var inject = function() {
 
-    if ($(this).attr('tierplus')) return;
     $(this).attr('tierplus', true);
 
     var a = $(this).find('div.ysf-player-name a');
