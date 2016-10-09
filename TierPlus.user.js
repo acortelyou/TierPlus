@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.8.1
+// @version      0.8.2
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier data
@@ -28,7 +28,7 @@ var data;
 try {
     data = JSON.parse(GM_getValue('data', ''));
 } catch (e) {
-    data = {};
+    data = {QB:{},WR:{},RB:{},TE:{},F:{},K:{},DEF:{}};
 }
 
 data.QB.file  = 'weekly-QB.csv';
