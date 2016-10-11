@@ -119,11 +119,11 @@ var inject = function() {
     if (!a) return;
 
     var name = a.text();
-    var pattern = name
+    var name_pattern = name
         .replace(/\./g, "\\.")
         .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
         .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
-    var re = new RegExp(pattern);
+    var name_regex = new RegExp(name_pattern);
 
     var span = $(this).find('div.ysf-player-name span');
     if (!span) return;
@@ -134,12 +134,11 @@ var inject = function() {
     text = text.split(/[\s-]+/);
     if (text.length != 2) return;
 
-    var team = text.shift().toUpperCase();
-    if (team == 'JAX') {
-        team = 'JAC';
-    } else if (team == 'WSH') {
-        team = 'WAS';
-    }
+    var team = text.shift();
+    var team_pattern = team
+        .replace(/JAX/i, 'JAC')
+        .replace(/WSH/i, 'WAS');
+    var team_regex = new RegExp(team_pattern,'i');
 
     var type = text.shift().toUpperCase();
     var types = [].concat(type.split(','));
@@ -157,7 +156,7 @@ var inject = function() {
         if (role in data && data[role].rows)
         for (i = 0; i < data[role].rows.length; i++) {
             var row = data[role].rows[i];
-            if (re.test(row['Player.Name']) && team == row.Team) {
+            if (name_regex.test(row['Player.Name']) && team_regex.test(row['Team'])) {
                 tier = role + row.Tier;
                 break;
             }
