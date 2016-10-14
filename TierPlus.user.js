@@ -187,7 +187,7 @@ var inject = function() {
                         'Worst: ' + match['Worst.Rank'] + ', ' +
                         'Avg: ' + round(match['Avg.Rank'],3) + ', ' +
                         'StdDev: ' + round(match['Std.Dev'],3);
-            var label = name + ' - ' + tier + ' (' + hover + ')';
+            var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
             var img = url + data[role].file + '.png';
             tags.push('<a href="'+img+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
         } else if (role != 'F') {
