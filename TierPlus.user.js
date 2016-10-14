@@ -19,7 +19,7 @@
 
 $('<link href="//cdnjs.cloudflare.com/ajax/libs/lightbox2/2.8.2/css/lightbox.min.css" rel="stylesheet" type="text/css" />' +
   '<style type="text/css">' +
-          'a.tierplus:link{color: #000;}' +
+          'a.tierplus:link{color: #333;}' +
           '.lightboxOverlay{z-index:20000; position: fixed!important; top: 0; left: 0; height: 100%!important; width: 100%!important;}' +
           '.lightbox{z-index: 20001; position: fixed!important; top: 50%!important; transform: translateY(-50%);}' +
           '.lb-container{padding: 0;}' +
