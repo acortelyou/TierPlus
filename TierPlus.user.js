@@ -76,7 +76,9 @@ var teams = {
     "WAS": "Redskins"
 };
 
-var debug = function(o) { if (data.debug) console.log(o); };
+var roles = ["QB","WR","RB","TE","F","K","DEF"];
+
+var debug = function(o) { if (data.debug) console.error(o); };
 
 var init = function() {
 
@@ -95,11 +97,12 @@ var init = function() {
     data.RB.flex = true;
     data.TE.flex = true;
 
-    for (var role in data) {
-        data[role].state = "pending";
+    var i;
+    for (i in roles) {
+        data[roles[i]].state = "pending";
     }
-    for (role in data) {
-        load(role);
+    for (i in roles) {
+        load(roles[i]);
     }
 };
 
@@ -107,9 +110,7 @@ var load = function(role) {
 
     if (new Date(data[role].modified) < old) {
         delete data[role].rows;
-    }
-
-    if (new Date(data[role].checked) > ttl) {
+    } else if (new Date(data[role].checked) > ttl) {
         data[role].state = "cached";
         ready();
         return;
@@ -146,8 +147,8 @@ var load = function(role) {
 
 var ready = function() {
 
-    for (var role in data) {
-        if (data[role].state == "pending") return;
+    for (var i in roles) {
+        if (data[roles[i]].state == "pending") return;
     }
 
     GM_setValue('data', JSON.stringify(data));
@@ -258,8 +259,15 @@ var round = function(value, decimals) {
 
 try {
     data = JSON.parse(GM_getValue('data', ''));
+    if (data.version != GM_info.script.version) {
+        data.version = GM_info.script.version;
+        throw Error('updated');
+    }
     init();
 } catch (e) {
-    data = {QB:{},WR:{},RB:{},TE:{},F:{},K:{},DEF:{}};
+    debug(e);
+    for (var i in roles) {
+        data[roles[i]] = {};
+    }
     init();
 }
