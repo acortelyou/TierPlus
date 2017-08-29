@@ -96,12 +96,12 @@ var load = function(role) {
             ready();
         },
         onload: function(response) {
-            data[role].checked = response.responseHeaders.match(/Date: (.*)/)[1];
+            data[role].checked = response.responseHeaders.match(/Date: (.*)/i)[1];
             data[role].status = response.status;
             data[role].text = response.responseText;
 
             if (response.status == 200) {
-                data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/)[1];
+                data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/i)[1];
                 data[role].rows = $.csv.toObjects(response.responseText);
             }
 
