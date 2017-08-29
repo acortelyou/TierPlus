@@ -49,6 +49,8 @@ var teams = {
     "CAR": "Panthers",
     "CHI": "Bears",
     "CIN": "Bengals",
+    "CLE": "Browns",
+    "DAL": "Cowboys",
     "DEN": "Broncos",
     "DET": "Lions",
     "GB":  "Packers",
