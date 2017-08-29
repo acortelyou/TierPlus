@@ -76,10 +76,11 @@ var teams = {
     "WAS": "Redskins"
 };
 
-var debug = function(o) {};
-//debug = function(o) { console.log(o); };
+var debug = function(o) { if (data.debug) console.log(o); };
 
 var init = function() {
+
+    //data.debug = true;
 
     data.QB.file  = 'weekly-QB';
     data.WR.file  = 'weekly-HALF-POINT-PPR-WR';
