@@ -96,7 +96,7 @@ var init = function() {
     data.TE.flex = true;
 
     for (var role in data) {
-        data[role].pending = true;
+        data[role].state = "pending";
     }
     for (role in data) {
         load(role);
@@ -110,8 +110,7 @@ var load = function(role) {
     }
 
     if (new Date(data[role].checked) > ttl) {
-        data[role].pending = false;
-        debug(role + " ready");
+        data[role].state = "cached";
         ready();
         return;
     }
@@ -124,13 +123,10 @@ var load = function(role) {
         url: url + data[role].file + '.csv',
         headers: headers,
         onerror: function(response) {
-            debug(response);
-            debug(role + " error");
-            data[role].pending = false;
+            data[role].state = "error";
             ready();
         },
         onload: function(response) {
-            debug(response);
             data[role].checked = response.responseHeaders.match(/Date: (.*)/i)[1];
             data[role].status = response.status;
             data[role].text = response.responseText;
@@ -138,12 +134,11 @@ var load = function(role) {
             if (response.status == 200) {
                 data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/i)[1];
                 data[role].rows = $.csv.toObjects(response.responseText);
-                debug(role + " loaded");
+                data[role].state = "loaded";
             } else {
-                debug(role + " failed");
+                data[role].state = "failed";
             }
 
-            data[role].pending = false;
             ready();
         }
     });
@@ -152,7 +147,7 @@ var load = function(role) {
 var ready = function() {
 
     for (var role in data) {
-        if (data[role].pending) return;
+        if (data[role].state == "pending") return;
     }
 
     GM_setValue('data', JSON.stringify(data));
