@@ -34,7 +34,7 @@ lightbox.option({
     albumLabel: "Chart %1 of %2",
 });
 
-var url = 'https://s3-us-west-1.amazonaws.com/fftiers/out/current/';
+var url = 'https://s3-us-west-1.amazonaws.com/fftiers/out/';
 var now = new Date();
 var ttl = 3600;
 
