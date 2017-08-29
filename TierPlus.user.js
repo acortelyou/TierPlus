@@ -19,7 +19,7 @@
 
 $('<link href="//cdnjs.cloudflare.com/ajax/libs/lightbox2/2.8.2/css/lightbox.min.css" rel="stylesheet" type="text/css" />' +
   '<style type="text/css">' +
-          'a.tierplus:link{color: #333;}' +
+          'a.tierplus{color: #333;}' +
           '.lightboxOverlay{z-index:20000; position: fixed!important; top: 0; left: 0; height: 100%!important; width: 100%!important;}' +
           '.lightbox{z-index: 20001; position: fixed!important; top: 50%!important; transform: translateY(-50%);}' +
           '.lb-container{padding: 0;}' +
@@ -36,19 +36,46 @@ lightbox.option({
 
 var url = 'https://s3-us-west-1.amazonaws.com/fftiers/out/';
 var now = new Date();
-var ttl = 3600;
+var ttl = new Date(now - 3600e3); //1hour
+var old = new Date(now - 15778463e3); //6months
 
 var data;
 
-$(function() {
-    try {
-        data = JSON.parse(GM_getValue('data', ''));
-        init();
-    } catch (e) {
-        data = {QB:{},WR:{},RB:{},TE:{},F:{},K:{},DEF:{}};
-        init();
-    }
-});
+var teams = {
+    "ARI": "Cardinals",
+    "ATL": "Falcons",
+    "BAL": "Ravens",
+    "BUF": "Bills",
+    "CAR": "Panthers",
+    "CHI": "Bears",
+    "CIN": "Bengals",
+    "DEN": "Broncos",
+    "DET": "Lions",
+    "GB":  "Packers",
+    "HOU": "Texans",
+    "IND": "Colts",
+    "JAX": "Jaguars",
+    "KC":  "Chiefs",
+    "LAR": "Rams",
+    "LAC": "Chargers",
+    "MIA": "Dolphins",
+    "MIN": "Vikings",
+    "NE":  "Patriots",
+    "NO":  "Saints",
+    "NYJ": "Jets",
+    "NYG": "Giants",
+    "OAK": "Raiders",
+    "PHI": "Eagles",
+    "PIT": "Steelers",
+    "SF":  "49ers",
+    "SEA": "Seahawks",
+    "TB":  "Buccaneers",
+    "TEN": "Titans",
+    "WAS": "Redskins"
+};
+
+var debug = function(o) {};
+//debug = function(o) { console.log(o); };
 
 var init = function() {
 
@@ -60,6 +87,7 @@ var init = function() {
     data.K.file   = 'weekly-K';
     data.DEF.file = 'weekly-DST';
 
+    data.QB.flex = false;
     data.WR.flex = true;
     data.RB.flex = true;
     data.TE.flex = true;
@@ -73,17 +101,18 @@ var init = function() {
 };
 
 var load = function(role) {
-    
-    if (data[role].checked) {
-        data[role].age = (now - new Date(data[role].checked)) / 1000;
+
+    if (new Date(data[role].modified) < old) {
+        delete data[role].rows;
     }
-    
-    if (data[role].age < ttl) {
+
+    if (new Date(data[role].checked) > ttl) {
         data[role].pending = false;
+        debug(role + " ready");
         ready();
         return;
     }
-    
+
     var headers = {};
     if (data[role].modified) headers['If-Modified-Since'] = data.modified;
 
@@ -92,10 +121,13 @@ var load = function(role) {
         url: url + data[role].file + '.csv',
         headers: headers,
         onerror: function(response) {
+            debug(response);
+            debug(role + " error");
             data[role].pending = false;
             ready();
         },
         onload: function(response) {
+            debug(response);
             data[role].checked = response.responseHeaders.match(/Date: (.*)/i)[1];
             data[role].status = response.status;
             data[role].text = response.responseText;
@@ -103,6 +135,9 @@ var load = function(role) {
             if (response.status == 200) {
                 data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/i)[1];
                 data[role].rows = $.csv.toObjects(response.responseText);
+                debug(role + " loaded");
+            } else {
+                debug(role + " failed");
             }
 
             data[role].pending = false;
@@ -118,15 +153,14 @@ var ready = function() {
     }
 
     GM_setValue('data', JSON.stringify(data));
-    console.log(data);
+    debug(data);
 
     scan();
     observe();
 };
 
 var scan = function() {
-    console.log('scan');
-    
+    debug('scan');
     $('td.player').not('[tierplus]').each(inject);
 };
 
@@ -141,8 +175,8 @@ var inject = function() {
     var name_pattern = name
         .replace(/\./g, "\\.")
         .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
-        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?");
-    var name_regex = new RegExp(name_pattern);
+        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?")
+        .replace(/Wil /, "Will? ");
 
     var span = $(this).find('div.ysf-player-name span');
     if (!span) return;
@@ -153,11 +187,18 @@ var inject = function() {
     text = text.split(/[\s-]+/);
     if (text.length != 2) return;
 
-    var team = text.shift();
+    var team = text.shift().toUpperCase();
     var team_pattern = team
         .replace(/JAX/i, 'JAC')
         .replace(/WSH/i, 'WAS');
-    var team_regex = new RegExp(team_pattern,'i');
+
+    if (teams[team_pattern]) {
+        team_pattern = "("+team_pattern+"|"+teams[team_pattern]+")";
+    }
+
+    var pattern = name_pattern + " " + team_pattern;
+    var regex = new RegExp(pattern, 'i');
+    debug(pattern);
 
     var type = text.shift().toUpperCase();
     var types = [].concat(type.split(','));
@@ -175,7 +216,7 @@ var inject = function() {
         if (role in data && data[role].rows)
         for (i = 0; i < data[role].rows.length; i++) {
             var row = data[role].rows[i];
-            if (name_regex.test(row['Player.Name']) && team_regex.test(row['Team'])) {
+            if (regex.test(row['Player.Name'])) {
                 match = row;
                 break;
             }
@@ -183,8 +224,8 @@ var inject = function() {
         if (match) {
             var tier = role + match['Tier'];
             var group = name + ' - ' + team + ' - ' + type;
-            var hover = 'Best: ' + match['Best.Rank'] + ', ' +
-                        'Worst: ' + match['Worst.Rank'] + ', ' +
+            var hover = 'Best: ' + match['Best'] + ', ' +
+                        'Worst: ' + match['Worst'] + ', ' +
                         'Avg: ' + round(match['Avg.Rank'],3) + ', ' +
                         'StdDev: ' + round(match['Std.Dev'],3);
             var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
@@ -216,3 +257,11 @@ var observe = function(){
 var round = function(value, decimals) {
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 };
+
+try {
+    data = JSON.parse(GM_getValue('data', ''));
+    init();
+} catch (e) {
+    data = {QB:{},WR:{},RB:{},TE:{},F:{},K:{},DEF:{}};
+    init();
+}
