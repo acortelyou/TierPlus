@@ -34,7 +34,7 @@ lightbox.option({
     albumLabel: "Chart %1 of %2",
 });
 
-var url = 'https://s3-us-west-1.amazonaws.com/fftiers/out/';
+var url = 'https://k3u.com/fftiers/';
 var now = new Date();
 var ttl = new Date(now - 3600e3); //1hour
 var old = new Date(now - 15778463e3); //6months
@@ -121,7 +121,7 @@ var load = function(role) {
 
     GM_xmlhttpRequest({
         method: 'GET',
-        url: url + data[role].file + '.csv',
+        url: url + 'current/csv/' + data[role].file + '.csv',
         headers: headers,
         onerror: function(response) {
             data[role].state = "error";
@@ -223,12 +223,12 @@ var inject = function() {
         if (match) {
             var tier = role + match['Tier'];
             var group = name + ' - ' + team + ' - ' + type;
-            var hover = 'Best: ' + match['Best'] + ', ' +
-                        'Worst: ' + match['Worst'] + ', ' +
+            var hover = 'Best: ' + match['Best.Rank'] + ', ' +
+                        'Worst: ' + match['Worst.Rank'] + ', ' +
                         'Avg: ' + round(match['Avg.Rank'],3) + ', ' +
                         'StdDev: ' + round(match['Std.Dev'],3);
             var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
-            var img = url + data[role].file + '.png';
+            var img = url + 'current/png/' + data[role].file + '.png';
             tags.push('<a href="'+img+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
         } else if (role != 'F') {
             tags.push(role);
