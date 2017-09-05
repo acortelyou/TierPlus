@@ -78,7 +78,11 @@ var teams = {
 
 var roles = ["QB","WR","RB","TE","F","K","DEF"];
 
-var debug = function(o) { if (data.debug) console.error(o); };
+var debug = function(o) {
+    if (data && data.debug) {
+        console.error(o);
+    }
+};
 
 var init = function() {
 
@@ -266,6 +270,7 @@ try {
     init();
 } catch (e) {
     debug(e);
+    data = [];
     for (var i in roles) {
         data[roles[i]] = {};
     }
