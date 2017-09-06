@@ -1,14 +1,12 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      0.9.6
+// @version      1.0.0
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
-// @thanks       to Boris Chen for publishing his FF tier data
+// @thanks       to Boris Chen for publishing his FF tier code
 // @license      MIT License
 // @grant        GM_xmlhttpRequest
-// @grant        GM_getValue
-// @grant        GM_setValue
 // @match        http://football.fantasysports.yahoo.com/f1/*
 // @match        https://football.fantasysports.yahoo.com/f1/*
 // @require      https://code.jquery.com/jquery-latest.js
@@ -19,255 +17,243 @@
 
 $('<link href="//cdnjs.cloudflare.com/ajax/libs/lightbox2/2.8.2/css/lightbox.min.css" rel="stylesheet" type="text/css" />' +
   '<style type="text/css">' +
-          'a.tierplus{color: #333;}' +
-          '.lightboxOverlay{z-index:20000; position: fixed!important; top: 0; left: 0; height: 100%!important; width: 100%!important;}' +
-          '.lightbox{z-index: 20001; position: fixed!important; top: 50%!important; transform: translateY(-50%);}' +
-          '.lb-container{padding: 0;}' +
+    'a.tierplus{color: #333;}' +
+    '.lightboxOverlay{z-index:20000; position: fixed!important; top: 0; left: 0; height: 100%!important; width: 100%!important;}' +
+    '.lightbox{z-index: 20001; position: fixed!important; top: 50%!important; transform: translateY(-50%);}' +
+    '.lb-container{padding: 0;}' +
   '</style>'
 ).appendTo('head');
 
 lightbox.option({
-    maxWidth: 900,
-    wrapAround: true,
-    resizeDuration: 0,
-    alwaysShowNavOnTouchDevices: true,
-    albumLabel: "Chart %1 of %2",
+  maxWidth: 900,
+  wrapAround: true,
+  resizeDuration: 0,
+  alwaysShowNavOnTouchDevices: true,
+  albumLabel: "Chart %1 of %2",
 });
 
-var url = 'https://k3u.com/fftiers/';
-var now = new Date();
-var ttl = new Date(now - 3600e3); //1hour
-var old = new Date(now - 15778463e3); //6months
+var data = {
+  debug: false,
+  mod: 'HALF-POINT-PPR',
+  root: 'https://k3u.com/fftiers/',
 
-var data;
+  QB: { file: "QB"  },
+  WR: { file: "WR",   mod: true,  flex: true },
+  RB: { file: "RB",   mod: true,  flex: true },
+  TE: { file: "TE",   mod: true,  flex: true },
+  F:  { file: "FLEX", mod: true },
+  K:  { file: "K"   },
+  DEF:{ file: "DST" },
 
-var teams = {
-    "ARI": "Cardinals",
-    "ATL": "Falcons",
-    "BAL": "Ravens",
-    "BUF": "Bills",
-    "CAR": "Panthers",
-    "CHI": "Bears",
-    "CIN": "Bengals",
-    "CLE": "Browns",
-    "DAL": "Cowboys",
-    "DEN": "Broncos",
-    "DET": "Lions",
-    "GB":  "Packers",
-    "HOU": "Texans",
-    "IND": "Colts",
-    "JAX": "Jaguars",
-    "KC":  "Chiefs",
-    "LAR": "Rams",
-    "LAC": "Chargers",
-    "MIA": "Dolphins",
-    "MIN": "Vikings",
-    "NE":  "Patriots",
-    "NO":  "Saints",
-    "NYJ": "Jets",
-    "NYG": "Giants",
-    "OAK": "Raiders",
-    "PHI": "Eagles",
-    "PIT": "Steelers",
-    "SF":  "49ers",
-    "SEA": "Seahawks",
-    "TB":  "Buccaneers",
-    "TEN": "Titans",
-    "WAS": "Redskins"
+  fix: {
+    name: [
+      [ /\./g , "\\." ],
+      [ /^(\w)\\\. / , "$1[\\w\\.']+ " ],
+      [ / ([JS])r\\\.$/ , "( $1r\\.)?" ],
+      [ /Wil / , "Will? " ],
+    ],
+    team: [
+      [ /JAX/ , 'JAC' ],
+      [ /WSH/ , 'WAS' ],
+    ],
+    teamname: {
+      "ARI": "Cardinals",
+      "ATL": "Falcons",
+      "BAL": "Ravens",
+      "BUF": "Bills",
+      "CAR": "Panthers",
+      "CHI": "Bears",
+      "CIN": "Bengals",
+      "CLE": "Browns",
+      "DAL": "Cowboys",
+      "DEN": "Broncos",
+      "DET": "Lions",
+      "GB":  "Packers",
+      "HOU": "Texans",
+      "IND": "Colts",
+      "JAX": "Jaguars",
+      "KC":  "Chiefs",
+      "LAR": "Rams",
+      "LAC": "Chargers",
+      "MIA": "Dolphins",
+      "MIN": "Vikings",
+      "NE":  "Patriots",
+      "NO":  "Saints",
+      "NYJ": "Jets",
+      "NYG": "Giants",
+      "OAK": "Raiders",
+      "PHI": "Eagles",
+      "PIT": "Steelers",
+      "SF":  "49ers",
+      "SEA": "Seahawks",
+      "TB":  "Buccaneers",
+      "TEN": "Titans",
+      "WAS": "Redskins",
+    }
+  },
+  cache: {}
 };
 
-var roles = ["QB","WR","RB","TE","F","K","DEF"];
+function scan() {
+  $('td.player').not('[tierplus]').each(inject);
+}
 
-var debug = function(o) { if (data.debug) console.error(o); };
+var observer = new MutationObserver(function(mutations) {
+  scan();
+});
 
-var init = function() {
+function observe() {
+  var node = document.querySelector('section#players-table-wrapper');
+  if (node) observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:false});
+}
 
-    //data.debug = true;
+async function inject() {
 
-    data.QB.file  = 'weekly-QB';
-    data.WR.file  = 'weekly-HALF-POINT-PPR-WR';
-    data.RB.file  = 'weekly-HALF-POINT-PPR-RB';
-    data.TE.file  = 'weekly-HALF-POINT-PPR-TE';
-    data.F.file   = 'weekly-HALF-POINT-PPR-FLEX';
-    data.K.file   = 'weekly-K';
-    data.DEF.file = 'weekly-DST';
+  $(this).attr('tierplus', true);
 
-    data.QB.flex = false;
-    data.WR.flex = true;
-    data.RB.flex = true;
-    data.TE.flex = true;
+  var a = $(this).find('div.ysf-player-name a');
+  if (!a) return;
 
-    var i;
-    for (i in roles) {
-        data[roles[i]].state = "pending";
+  var name = a.text();
+  if (!name) return;
+
+  var span = $(this).find('div.ysf-player-name span');
+  if (!span) return;
+
+  var text = $(span).text();
+  if (!text) return;
+
+  var [team, role] = text.toUpperCase().split(/[\s-]+/);
+  if (!team || !role) return;
+
+  var roles = [].concat(role.split(','));
+  if (roles.length === 0) return;
+
+  var name_pattern = name;
+  for (let [regex, str] of data.fix.name) {
+    name_pattern = name_pattern.replace(regex, str);
+  }
+
+  var team_pattern = team;
+  for (let [regex, str] of data.fix.team) {
+    team_pattern = team_pattern.replace(regex, str);
+  }
+
+  if (data.fix.teamname[team_pattern]) {
+    team_pattern = "("+team_pattern+"|"+data.fix.teamname[team_pattern]+")";
+  }
+
+  var pattern = name_pattern + " " + team_pattern;
+  var regex = new RegExp(pattern, 'i');
+
+  var week = param('week');
+
+  var mod = data[role].mod ? (data.mod + '-' ) : '';
+
+  for (let i in roles) {
+    if (data[roles[i]].flex) {
+      roles.unshift('F');
+      break;
     }
-    for (i in roles) {
-        load(roles[i]);
+  }
+
+  console.log(pattern);
+
+  var tags = [];
+  for (let i in roles) {
+    let role = roles[i];
+
+    let src, png;
+    if (week) {
+      try {
+        src = await fetch('week' + week + '/csv/week-' + week + '-' + mod + data[role].file + '.csv');
+        png = 'week' + week + '/png/week-' + week + '-' + mod + data[role].file + '.png';
+      } catch(e) {
+        src = false;
+      }
     }
-};
-
-var load = function(role) {
-
-    if (new Date(data[role].modified) < old) {
-        delete data[role].rows;
-    } else if (new Date(data[role].checked) > ttl) {
-        data[role].state = "cached";
-        ready();
-        return;
+    if (!src) {
+      try {
+        src = await fetch('current/csv/weekly-' + mod + data[role].file + '.csv');
+        png = 'current/png/weekly-' + mod + data[role].file + '.png';
+      } catch(e) {
+        src = false;
+      }
     }
 
-    var headers = {};
-    if (data[role].modified) headers['If-Modified-Since'] = data.modified;
+    var match;
+    for (let i = 0; src && i < src.length; i++) {
+      var row = src[i];
+      if (regex.test(row['Player.Name'])) {
+        match = row;
+        break;
+      }
+    }
 
-    GM_xmlhttpRequest({
+    if (match) {
+      console.log(match);
+      var tier = role + match['Tier'];
+      var group = [ name, team, role ].join(' - ');
+      var hover = [
+        'Best: ' + match['Best.Rank'],
+        'Worst: ' + match['Worst.Rank'],
+        'Avg: ' + round(match['Avg.Rank'],3),
+        'StdDev: ' + round(match['Std.Dev'],3),
+      ].join(', ');
+      var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
+      tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
+    } else if (role != 'F') {
+      tags.push(role);
+    }
+  }
+
+  $(span).html(team+' <span style="display:none;">- '+role+'</span>');
+  $(span).parent().before('<span class="Fz-xxs Lh-xs" style="float:right;margin-right:3pt;">'+tags.join(' ')+'</span>');
+  $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
+}
+
+function fetch(url) {
+  return data.cache.hasOwnProperty(url) ? data.cache[url] : (data.cache[url] =
+    new Promise(function (resolve, reject) {
+      GM_xmlhttpRequest({
         method: 'GET',
-        url: url + 'current/csv/' + data[role].file + '.csv',
-        headers: headers,
+        url: data.root + url,
         onerror: function(response) {
-            data[role].state = "error";
-            ready();
+          console.error(response);
+          reject(response);
         },
         onload: function(response) {
-            data[role].checked = response.responseHeaders.match(/Date: (.*)/i)[1];
-            data[role].status = response.status;
-            data[role].text = response.responseText;
-
-            if (response.status == 200) {
-                data[role].modified = response.responseHeaders.match(/Last-Modified: (.*)/i)[1];
-                data[role].rows = $.csv.toObjects(response.responseText);
-                data[role].state = "loaded";
-            } else {
-                data[role].state = "failed";
-            }
-
-            ready();
+          try {
+            if (response.status != 200) throw response;
+            console.log(response);
+            resolve($.csv.toObjects(response.responseText));
+          } catch(e) {
+            console.error(e);
+            reject(response);
+          }
         }
-    });
-};
-
-var ready = function() {
-
-    for (var i in roles) {
-        if (data[roles[i]].state == "pending") return;
-    }
-
-    GM_setValue('data', JSON.stringify(data));
-    debug(data);
-
-    scan();
-    observe();
-};
-
-var scan = function() {
-    debug('scan');
-    $('td.player').not('[tierplus]').each(inject);
-};
-
-var inject = function() {
-
-    $(this).attr('tierplus', true);
-
-    var a = $(this).find('div.ysf-player-name a');
-    if (!a) return;
-
-    var name = a.text();
-    var name_pattern = name
-        .replace(/\./g, "\\.")
-        .replace(/^(\w)\\\. /, "$1[\\w\\.']+ ")
-        .replace(/ ([JS])r\\\.$/,"( $1r\\.)?")
-        .replace(/Wil /, "Will? ");
-
-    var span = $(this).find('div.ysf-player-name span');
-    if (!span) return;
-
-    var text = $(span).text();
-    if (!text) return;
-
-    text = text.split(/[\s-]+/);
-    if (text.length != 2) return;
-
-    var team = text.shift().toUpperCase();
-    var team_pattern = team
-        .replace(/JAX/i, 'JAC')
-        .replace(/WSH/i, 'WAS');
-
-    if (teams[team_pattern]) {
-        team_pattern = "("+team_pattern+"|"+teams[team_pattern]+")";
-    }
-
-    var pattern = name_pattern + " " + team_pattern;
-    var regex = new RegExp(pattern, 'i');
-    debug(pattern);
-
-    var type = text.shift().toUpperCase();
-    var types = [].concat(type.split(','));
-    for (var i in types) {
-        if (data[types[i]].flex) {
-            types.unshift('F');
-            break;
-        }
-    }
-
-    var tags = [];
-    for (i in types) {
-        var role = types[i];
-        var match = null;
-        if (role in data && data[role].rows)
-        for (i = 0; i < data[role].rows.length; i++) {
-            var row = data[role].rows[i];
-            if (regex.test(row['Player.Name'])) {
-                match = row;
-                break;
-            }
-        }
-        if (match) {
-            var tier = role + match['Tier'];
-            var group = name + ' - ' + team + ' - ' + type;
-            var hover = 'Best: ' + match['Best.Rank'] + ', ' +
-                        'Worst: ' + match['Worst.Rank'] + ', ' +
-                        'Avg: ' + round(match['Avg.Rank'],3) + ', ' +
-                        'StdDev: ' + round(match['Std.Dev'],3);
-            var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
-            var img = url + 'current/png/' + data[role].file + '.png';
-            tags.push('<a href="'+img+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
-        } else if (role != 'F') {
-            tags.push(role);
-        }
-    }
-    var tag = tags.join(' ');
-
-    $(span).html(team+' <span style="display:none;">- '+type+'</span>');
-    $(span).parent().before('<span class="Fz-xxs Lh-xs" style="float:right;margin-right:3pt;">'+tag+'</span>');
-    $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
-};
-
-var observer = new MutationObserver(function(mutations, observer) {
-    observer.disconnect();
-    scan();
-    observe();
-});
-
-var observe = function(){
-    var node = document.querySelector('table.Table');
-    for (var i = 0; i < 4; i++) node = node.parentNode;
-    observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:true});
-};
-
-var round = function(value, decimals) {
-  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
-};
-
-try {
-    data = JSON.parse(GM_getValue('data', ''));
-    if (data.version != GM_info.script.version) {
-        data.version = GM_info.script.version;
-        throw Error('updated');
-    }
-    init();
-} catch (e) {
-    debug(e);
-    for (var i in roles) {
-        data[roles[i]] = {};
-    }
-    init();
+      });
+    })
+  );
 }
+
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
+
+function param(p) {
+  var v = window.location.search.match(new RegExp('(?:[\?\&]'+p+'=)([^&]+)'));
+  return v ? v[1] : null;
+}
+
+(function main() {
+
+  if (!data.debug) {
+    window.console.log = function() {};
+    window.console.error = function() {};
+  }
+
+  scan();
+  observe();
+
+})();
