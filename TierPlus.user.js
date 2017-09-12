@@ -95,7 +95,7 @@ var data = {
 };
 
 function scan() {
-  $('td.player').not('[tierplus]').each(inject);
+  $('a.playernote:not([tierplus])').each(inject);
 }
 
 var observer = new MutationObserver(function(mutations) {
@@ -103,21 +103,21 @@ var observer = new MutationObserver(function(mutations) {
 });
 
 function observe() {
-  var node = document.querySelector('section#players-table-wrapper');
-  if (node) observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:false});
+  var node = document.querySelector('div#fantasy');
+  if (node) observer.observe(node,{childList: true, characterData: false, attributes: false, subtree:true});
 }
 
 async function inject() {
 
   $(this).attr('tierplus', true);
 
-  var a = $(this).find('div.ysf-player-name a');
+  var a = $(this).closest('td').find("a[href*='players']:not(.playernote):first");
   if (!a) return;
 
   var name = a.text();
   if (!name) return;
 
-  var span = $(this).find('div.ysf-player-name span');
+  var span = a.next();
   if (!span) return;
 
   var text = $(span).text();
@@ -208,7 +208,7 @@ async function inject() {
   }
 
   $(span).html(team+' <span style="display:none;">- '+role+'</span>');
-  $(span).parent().before('<span class="Fz-xxs Lh-xs" style="float:right;margin-right:3pt;">'+tags.join(' ')+'</span>');
+  $(this).parent().after('<span class="Fz-xxs Lh-xs" style="float:right;margin-right:3pt;">'+tags.join(' ')+'</span>');
   $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
 }
 
