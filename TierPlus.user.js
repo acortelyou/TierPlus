@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      1.0.1
+// @version      1.0.2
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier code
@@ -111,7 +111,7 @@ async function inject() {
 
   $(this).attr('tierplus', true);
 
-  var a = $(this).closest('td').find("a[href*='players']:not(.playernote):first");
+  var a = $(this).closest('td').find("a:not(.playernote):first");
   if (!a) return;
 
   var name = a.text();
