@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      1.0.2
+// @version      1.0.3
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier code
@@ -147,6 +147,13 @@ async function inject() {
   var regex = new RegExp(pattern, 'i');
 
   var week = param('week');
+  if (!week) {
+    week = $("div#fantasy header span:first");
+    if (week) {
+      week = /.*?Week (\d+)/.exec(week.text());
+      if (week) week = week[1];
+    }
+  }
 
   var mod = data[role].mod ? (data.mod + '-' ) : '';
 
