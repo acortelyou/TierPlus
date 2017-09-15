@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      1.0.3
+// @version      1.0.4
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier code
@@ -51,6 +51,7 @@ var data = {
       [ /^(\w)\\\. / , "$1[\\w\\.']+ " ],
       [ / ([JS])r\\\.$/ , "( $1r\\.)?" ],
       [ /Wil / , "Will? " ],
+      [ /Rob / , "Rob(ert)? " ],
     ],
     team: [
       [ /JAX/ , 'JAC' ],
