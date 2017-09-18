@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace    https://github.com/acortelyou/userscripts
 // @name         TierPlus
-// @version      1.0.4
+// @version      1.0.5
 // @author       Alex Cortelyou
 // @description  Tier injector for Yahoo FF
 // @thanks       to Boris Chen for publishing his FF tier code
@@ -112,7 +112,7 @@ async function inject() {
 
   $(this).attr('tierplus', true);
 
-  var a = $(this).closest('td').find("a:not(.playernote):first");
+  var a = $(this).closest('div').find("a:not(.playernote):first");
   if (!a) return;
 
   var name = a.text();
@@ -216,8 +216,17 @@ async function inject() {
   }
 
   $(span).html(team+' <span style="display:none;">- '+role+'</span>');
-  $(this).parent().after('<span class="Fz-xxs Lh-xs" style="float:right;margin-right:3pt;">'+tags.join(' ')+'</span>');
   $(span).append($(this).find('span.ysf-player-video-link')).find('a.yfa-video-playlist').text('');
+
+  let tag = '<span class="Fz-xxs Lh-xs tierplus">'+tags.join(' ')+'&nbsp;</span>';
+  let parent = $(this).parent();
+  let injury = $(this).prev('.F-injury');
+  if ($(parent).is('span')) {
+    $(tag).insertAfter(parent).css({'float':'right'});
+  } else {
+    let target = injury.length ? injury : this;
+    $(tag).insertBefore(target).css({'color':'#5f5f5f'});
+  }
 }
 
 function fetch(url) {
