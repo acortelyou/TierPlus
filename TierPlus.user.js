@@ -95,6 +95,12 @@ var data = {
   cache: {}
 };
 
+function log(msg) {
+  if (data.debug) {
+    console.log(msg);
+  }
+}
+
 function scan() {
   $('a.playernote:not([tierplus])').each(inject);
 }
@@ -171,7 +177,7 @@ async function inject() {
     }
   }
 
-  console.log(pattern);
+  log(pattern);
 
   var tags = [];
   for (let i in roles) {
@@ -205,7 +211,7 @@ async function inject() {
     }
 
     if (match) {
-      console.log(match);
+      log(match);
       var tier = role + match['Tier'];
       var group = [ name, team, role ].join(' - ');
       var hover = [
@@ -248,7 +254,7 @@ function fetch(url) {
         onload: function(response) {
           try {
             if (response.status != 200) throw response;
-            console.log(response);
+            log(response);
             resolve($.csv.toObjects(response.responseText));
           } catch(e) {
             console.error(e);
@@ -270,11 +276,6 @@ function param(p) {
 }
 
 (function main() {
-
-  if (!data.debug) {
-    window.console.log = function() {};
-    window.console.error = function() {};
-  }
 
   scan();
   observe();
