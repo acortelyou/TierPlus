@@ -211,21 +211,22 @@ async function inject() {
       }
     }
 
+    var group = [ name, team, role ].join(' - ');
+    var tier = role;
+    var hover = "";
+    var label = "";
     if (match) {
       log(match);
-      var tier = role + match['Tier'];
-      var group = [ name, team, role ].join(' - ');
-      var hover = [
+      tier = role + match['Tier'];
+      hover = [
         'Best: ' + match['Best.Rank'],
         'Worst: ' + match['Worst.Rank'],
         'Avg: ' + round(match['Avg.Rank'],3),
         'StdDev: ' + round(match['Std.Dev'],3),
       ].join(', ');
-      var label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
-      tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
-    } else if (role != 'F') {
-      tags.push(role);
+      label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
     }
+    tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
   }
 
   $(span).html(team+' <span style="display:none;">- '+role+'</span>');
