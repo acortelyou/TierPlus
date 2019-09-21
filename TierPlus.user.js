@@ -34,14 +34,14 @@ lightbox.option({
 
 var data = {
   debug: false,
-  mod: 'HALF-POINT-PPR',
-  root: 'https://k3u.com/fftiers/',
+  mod: 'HALF',
+  root: 'https://tierplus.azureedge.net/out/',
 
   QB: { file: "QB"  },
   WR: { file: "WR",   mod: true,  flex: true },
   RB: { file: "RB",   mod: true,  flex: true },
   TE: { file: "TE",   mod: true,  flex: true },
-  F:  { file: "FLEX", mod: true },
+  F:  { file: "FLX", mod: true },
   K:  { file: "K"   },
   DEF:{ file: "DST" },
 
@@ -147,10 +147,10 @@ async function inject() {
   }
 
   if (data.fix.teamname[team_pattern]) {
-    team_pattern = "("+team_pattern+"|"+data.fix.teamname[team_pattern]+")";
+    team_pattern = "( ("+team_pattern+"|"+data.fix.teamname[team_pattern]+"))?";
   }
 
-  var pattern = name_pattern + " " + team_pattern;
+  var pattern = name_pattern + team_pattern;
   var regex = new RegExp(pattern, 'i');
 
   var week = param('week');
@@ -162,7 +162,7 @@ async function inject() {
     }
   }
 
-  var mod = data[role].mod ? (data.mod + '-' ) : '';
+  var mod = data[role].mod ? ('-' + data.mod) : '';
 
   for (let i in roles) {
     if (data[roles[i]].flex) {
@@ -180,16 +180,16 @@ async function inject() {
     let src, png;
     if (week) {
       try {
-        src = await fetch('week' + week + '/csv/week-' + week + '-' + mod + data[role].file + '.csv');
-        png = 'week' + week + '/png/week-' + week + '-' + mod + data[role].file + '.png';
+        src = await fetch('week' + week + '/csv/week-' + week + '-' + data[role].file + mod + '.csv');
+        png = 'week' + week + '/png/week-' + week + '-' + data[role].file + mod + '.png';
       } catch(e) {
         src = false;
       }
     }
     if (!src) {
       try {
-        src = await fetch('current/csv/weekly-' + mod + data[role].file + '.csv');
-        png = 'current/png/weekly-' + mod + data[role].file + '.png';
+        src = await fetch('current/csv/weekly-' + data[role].file + mod + '.csv');
+        png = 'current/png/weekly-' + data[role].file + mod + '.png';
       } catch(e) {
         src = false;
       }
