@@ -153,10 +153,10 @@ async function inject() {
   }
 
   if (data.fix.teamname[team_pattern]) {
-    team_pattern = "( ("+team_pattern+"|"+data.fix.teamname[team_pattern]+"))?";
+    team_pattern = "("+team_pattern+"|"+data.fix.teamname[team_pattern]+")";
   }
 
-  var pattern = name_pattern + team_pattern;
+  var pattern = name_pattern + "( " + team_pattern + ")?";
   var regex = new RegExp(pattern, 'i');
 
   var week = param('week');
