@@ -52,6 +52,7 @@ var data = {
       [ / ([JS])r\\\.$/ , "( $1r\\.)?" ],
       [ /Wil / , "Will? " ],
       [ /Rob / , "Rob(ert)? " ],
+      [ /DJ / , "D\.?J\.? " ],
     ],
     team: [
       [ /JAX/ , 'JAC' ],
