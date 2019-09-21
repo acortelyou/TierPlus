@@ -226,7 +226,9 @@ async function inject() {
       ].join(', ');
       label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
     }
-    tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
+    if (match || role != 'F') {
+      tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
+    }
   }
 
   $(span).html(team+' <span style="display:none;">- '+role+'</span>');
