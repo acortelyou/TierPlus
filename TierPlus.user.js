@@ -157,8 +157,8 @@ async function inject() {
     team_pattern = "("+team_pattern+"|"+data.fix.teamname[team_pattern]+")";
   }
 
-  var pattern = name_pattern + "( " + team_pattern + ")?";
-  var regex = new RegExp(pattern, 'i');
+  var name_regex = new RegExp(name_pattern, 'i');
+  var team_regex = new RegExp(team_pattern, 'i');
 
   var week = param('week');
   if (!week) {
@@ -178,7 +178,7 @@ async function inject() {
     }
   }
 
-  log(pattern);
+  log([name_pattern, team_pattern]);
 
   var tags = [];
   for (let i in roles) {
@@ -205,7 +205,7 @@ async function inject() {
     var match;
     for (let i = 0; src && i < src.length; i++) {
       var row = src[i];
-      if (regex.test(row['Player.Name'])) {
+      if (name_regex.test(row['Player.Name']) && team_regex.test(row['Team'])) {
         match = row;
         break;
       }
@@ -224,7 +224,7 @@ async function inject() {
         'Avg: ' + round(match['Avg.Rank'],3),
         'StdDev: ' + round(match['Std.Dev'],3),
       ].join(', ');
-      label = match['Player.Name'] + ' - ' + tier + ' (' + hover + ')';
+      label = match['Player.Name'] + ' ' + match["Team"] + ' - ' + tier + ' (' + hover + ')';
     }
     if (match || role != 'F') {
       tags.push('<a href="'+data.root+png+'" data-lightbox="'+group+'" data-title="'+label+'" class="tierplus" title="'+hover+'">'+tier+'</a>');
